@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''; 
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || '';
+import { supabase } from '@/lib/supabase';
 
 export default function Home() {
     const [timeLeft, setTimeLeft] = useState({ years: '00', days: '000', hours: '00', minutes: '00', seconds: '00' });
@@ -66,21 +64,23 @@ export default function Home() {
 
     const fetchSignatures = async () => {
         try {
-            const countResponse = await fetch(`${SUPABASE_URL}/rest/v1/signatures?select=id`, {
-                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Range-Unit': 'items', 'Prefer': 'count=exact' }
-            });
-            const totalRange = countResponse.headers.get('content-range');
-            if (totalRange) {
-                setTotalSignatures(parseInt(totalRange.split('/')[1]));
-            }
+            const { count, error: countError } = await supabase
+                .from('signatures')
+                .select('*', { count: 'exact', head: true });
+                
+            if (countError) throw countError;
+            setTotalSignatures(count || 0);
 
-            const dataResponse = await fetch(`${SUPABASE_URL}/rest/v1/signatures?select=*&order=created_at.desc&limit=50`, {
-                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-            });
-            const data = await dataResponse.json();
-            setSignatures(data);
+            const { data, error: listError } = await supabase
+                .from('signatures')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (listError) throw listError;
+            setSignatures(data || []);
         } catch (error) {
-            console.error("Supabase error:", error);
+            console.error('İmzalar yüklenirken hata:', error);
         }
     };
 
@@ -99,13 +99,11 @@ export default function Home() {
         setSubmitStatus("idle");
 
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/signatures`, {
-                method: 'POST',
-                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-                body: JSON.stringify({ name: tName })
-            });
+            const { error } = await supabase
+                .from('signatures')
+                .insert([{ name: tName }]);
 
-            if (response.ok) {
+            if (!error) {
                 setNameVal("");
                 setSubmitStatus("success");
                 fetchSignatures();
