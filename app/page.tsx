@@ -3,6 +3,63 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
+const playSound = (type: 'whoosh' | 'click') => {
+    if (typeof window === 'undefined') return;
+    try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContext) return;
+        
+        const audioCtx = new AudioContext();
+        
+        if (type === 'whoosh') {
+            const bufferSize = audioCtx.sampleRate * 0.3; 
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1; 
+            }
+            
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(100, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.15);
+            filter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+            
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.1); 
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3); 
+            
+            noise.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            noise.start();
+        } else if (type === 'click') {
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+    } catch(e) {
+        // ignore
+    }
+};
+
 export default function Home() {
     const [timeLeft, setTimeLeft] = useState({ years: '00', days: '000', hours: '00', minutes: '00', seconds: '00' });
     const [progress, setProgress] = useState("0.000000%");
@@ -95,6 +152,7 @@ export default function Home() {
         const tName = nameVal.trim();
         if (!tName) return;
 
+        playSound('click');
         setIsSubmitting(true);
         setSubmitStatus("idle");
 
@@ -219,6 +277,7 @@ export default function Home() {
                             type="submit" 
                             className="sign-btn" 
                             disabled={isSubmitting}
+                            onMouseEnter={() => playSound('whoosh')}
                             style={{ background: submitStatus === "success" ? 'linear-gradient(135deg, #10b981, #059669)' : undefined }}
                         >
                             <span className="btn-text">{btnText}</span>
@@ -240,7 +299,13 @@ export default function Home() {
             </div>
 
             <section className="wiki-section">
-                <a href="https://tr.wikipedia.org/wiki/Recep_Tayyip_Erdo%C4%9Fan" target="_blank" className="silhouette-link">
+                <a 
+                    href="https://tr.wikipedia.org/wiki/Recep_Tayyip_Erdo%C4%9Fan" 
+                    target="_blank" 
+                    className="silhouette-link"
+                    onMouseEnter={() => playSound('whoosh')}
+                    onClick={() => playSound('click')}
+                >
                     <img src="/erdogan.png" alt="Recep Tayyip Erdoğan Silüeti" className="silhouette-img" />
                 </a>
                 <h3 className="wiki-title">Neden mi istifa?</h3>
