@@ -15,6 +15,12 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+
+::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
 }
 
 body {
@@ -540,17 +546,7 @@ footer:hover {
     gap: 0.8rem;
 }
 
-/* Custom scrollbar for list */
-.signatures-list::-webkit-scrollbar {
-    width: 4px;
-}
-.signatures-list::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.02);
-}
-.signatures-list::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.2);
-    border-radius: 10px;
-}
+/* Custom scrollbar for list is removed to keep UI clean */
 
 .signature-item {
     background: rgba(255, 255, 255, 0.03);
